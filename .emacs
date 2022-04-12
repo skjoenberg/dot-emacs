@@ -269,13 +269,16 @@
             :host github
             :repo "Andre0991/vilpy")
   :after avy
-  :bind (:map vilpy-mode-map
-              ("C-i" . vilpy-special)
-         :map vilpy-mode-map-vilpy
-         ("C-j" . nil))
+  :bind ((:map vilpy-mode-map
+               ("C-f"   . vilpy-special)
+               ("C-M-." . vilpy-parens)
+               ("C-M->" . vilpy-brackets)
+               ("C-M-," . vilpy-braces))
+         (:map vilpy-mode-map-vilpy
+               ("C-j" . nil)))
   :hook clojure-mode
   :config
-  (vilpy-mode +1)) 
+  (vilpy-mode +1))
 
 ;;;;;;;;;;;;
 ;; Python ;;
