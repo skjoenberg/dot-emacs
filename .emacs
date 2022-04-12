@@ -2,8 +2,8 @@
 ;; Straight ;;
 ;;;;;;;;;;;;;;
 (setq package-enable-at-startup nil)
-(setq straight-use-package-by-default t)
 
+(defvar straight-use-package-by-default t)
 (defvar bootstrap-version)
 
 (let ((bootstrap-file
