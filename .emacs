@@ -28,22 +28,17 @@
   (tool-bar-mode -1)
   (menu-bar-mode -1)
   (scroll-bar-mode -1)
-
   (setq scroll-margin 0
-        scroll-conservatively 101 ; > 100
+        scroll-conservatively 101
         scroll-preserve-screen-position t
         auto-window-vscroll nil
         visible-bell       nil
         ring-bell-function #'ignore)
-
   (setq-default indent-tabs-mode nil)
+  (setq inhibit-startup-screen t)
+  (add-hook 'before-save-hook 'delete-trailing-whitespace))
 
-  ;; Omit default startup screen
-  (setq inhibit-startup-screen t))
-
-;(use-package diminish
-;  :ensure t
-;  :demand t)
+(use-package diminish)
 
 ;;(use-package files
 ;;  :config
@@ -267,30 +262,6 @@
                 '(clojure-cider-eastwood clojure-cider-typed))
   :after clojure-mode)
 
-;;(use-package smartparens-strict-mode
-;;  :hook clojure-mode
-;;  :init
-;;  (require 'smartparens-config)
-;;  (sp-with-modes sp--lisp-modes
-;;    ;; disable ', it's the quote character!
-;;    (sp-local-pair "'" nil :actions nil)
-;;    ;; also only use the pseudo-quote inside strings where it serve as
-;;    ;; hyperlink.
-;;    (sp-local-pair "`" "'" :when '(sp-in-string-p sp-in-comment-p))
-;;    (sp-local-pair "`" nil
-;;                    :skip-match (lambda (ms mb me)
-;;                                (cond
-;;                                    ((equal ms "'")
-;;                                    (or (sp--org-skip-markup ms mb me)
-;;                                        (not (sp-point-in-string-or-comment))))
-;;                                    (t (not (sp-point-in-string-or-comment)))))))
-;;  :bind (("C-M-." . sp-wrap-round)
-;;         ("C-M->" . sp-wrap-square)
-;;         ("C-M-," . sp-wrap-curly)
-;;         ("s-h"   . sp-backward-slurp-sexp)
-;;         ("s-l"   . sp-forward-slurp-sexp)))
-
-
 (use-package avy)
 
 (use-package vilpy
@@ -306,34 +277,12 @@
   :config
   (vilpy-mode +1)) 
 
-;;(use-package lispy
-;;  :ensure t
-;;  :init
-;;  (setq lispy-compat '(cider))
-;;  :hook clojure-mode
-;;  :bind (:map lispy-mode-map
-;;              ("C-M-." . lispy-parens)
-;;              ("C-M->" . lispy-brackets)
-;;              ("C-M-," . lispy-braces))
-;;  :config
-;;  (lispy-mode +1)
-;;  (define-key lispy-mode-map-lispy (kbd "C-j") nil)
-;;  (lispy-set-key-theme '(lispy special evilcp c-digits)))
-
-;;(use-package lispyville
-;;  :ensure t
-;;  :hook clojure-mode
-;;  :config
-;;  (lispyville-mode +1)
-;;  (lispyville-set-key-theme '(operators c-w additional))
-;;  )
-
 ;;;;;;;;;;;;
 ;; Python ;;
 ;;;;;;;;;;;;
 
 ;; Dependencies
-;; pip3 install jupyterlab pyright pylint mypy flake8 
+;; pip3 install jupyterlab pyright pylint mypy flake8
 
 (use-package eval-sexp-fu)
 
@@ -399,7 +348,7 @@
 (set-selection-coding-system 'utf-8)
 (set-file-name-coding-system 'utf-8)
 (set-clipboard-coding-system 'utf-8)
-(set-buffer-file-coding-system 'utf-8) 
+(set-buffer-file-coding-system 'utf-8)
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (global-hl-line-mode)
@@ -451,10 +400,10 @@
         lsp-headerline-breadcrumb-enable nil
         lsp-auto-configure t
         ;; to avoid conflicting with CIDER eldoc
-        lsp-eldoc-enable-hover nil 
+        lsp-eldoc-enable-hover nil
         lsp-lens-enable t
         ;; clojure-lsp runs cljfmt on indent which is too aggresive
-        lsp-enable-indentation nil 
+        lsp-enable-indentation nil
         treemacs-space-between-root-nodes nil
         company-minimum-prefix-length 2
         lsp-signature-auto-activate nil)
@@ -468,21 +417,6 @@
 (use-package lsp-treemacs
   :commands lsp-treemacs-errors-list)
 
-;;(add-to-list 'load-path "~/.emacs.d/elpa/lsp-ui-20220104.1635")
-;;(require 'lsp-ui)
-;;(setq lsp-ui-doc-show-with-cursor t
-;;        lsp-ui-doc-delay 0
-;;        lsp-ui-doc-include-signature nil
-;;        lsp-ui-doc-max-width 50
-;;        lsp-ui-doc-max-height 6 
-;;        lsp-ui-doc-header t
-;;        lsp-ui-doc-text-scale-level -4
-;;        lsp-ui-doc-enhanced-markdown t
-;;        lsp-ui-doc-show-with-mouse nil
-;;        lsp-ui-sideline-show-diagnostics nil
-;;        lsp-ui-sideline-show-hover nil
-;;        lsp-ui-sideline-show-code-actions nil)  
-
 (use-package lsp-ui
   :commands lsp-ui-mode
   :init
@@ -490,7 +424,7 @@
         lsp-ui-doc-delay 0
         lsp-ui-doc-include-signature nil
         lsp-ui-doc-max-width 50
-        lsp-ui-doc-max-height 6 
+        lsp-ui-doc-max-height 6
         lsp-ui-doc-header t
         lsp-ui-doc-text-scale-level -4
         lsp-ui-doc-enhanced-markdown t
