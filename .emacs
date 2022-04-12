@@ -1,6 +1,10 @@
-;;;;;;;;;;;;;;
-;; Straight ;;
-;;;;;;;;;;;;;;
+;;; package -- Sumary
+;;; Commentary:
+;;; Code:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Straight / Package management ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq package-enable-at-startup nil)
 
 (defvar straight-use-package-by-default t)
@@ -33,21 +37,31 @@
         scroll-preserve-screen-position t
         auto-window-vscroll nil
         visible-bell       nil
-        ring-bell-function #'ignore)
+        ring-bell-function #'ignore
+        enable-recursive-minibuffers t)
   (setq-default indent-tabs-mode nil)
+  (setq-default require-final-newline t)
   (setq inhibit-startup-screen t)
-  (add-hook 'before-save-hook 'delete-trailing-whitespace))
+  (setq confirm-kill-processes t
+        create-lockfiles nil
+        make-backup-files nil))
 
 ;;;;;;;;;;
 ;; Misc ;;
 ;;;;;;;;;;
+(use-package restart-emacs)
+
 (use-package diminish)
 
-(use-package files
-  :config
-  (setq confirm-kill-processes t
-        create-lockfiles nil
-        make-backup-files nil))
+(use-package ws-butler
+  :init
+  (ws-butler-global-mode +1))
+
+;; (use-package files
+;;   :config
+;;   (setq confirm-kill-processes t
+;;         create-lockfiles nil
+;;         make-backup-files nil))
 
 (use-package autorevert
   :config
@@ -110,10 +124,70 @@
   :bind (("C-j" . er/expand-region)
          ("C-S-j" . er/contract-region)))
 
+
+
+
+(use-package marginalia
+  :bind (("M-A" . marginalia-cycle)
+         :map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+  :init (marginalia-mode))
+
+(use-package vertico
+  :straight (:files ("vertico.el"
+                     "extensions/vertico-directory.el"))
+  :init
+  (vertico-mode +1)
+  :bind (("C-s" . vertico-next)
+         ("C-r" . vertico-previous)
+         (:map vertico-map
+               ("RET" . vertico-directory-enter)
+               ("DEL" . vertico-directory-delete-char)
+               ("M-DEL" . vertico-directory-delete-word))
+         ))
+
+;;(use-package vertico-directory
+;;  :after vertico
+;;  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
+(use-package savehist
+  :init
+  (savehist-mode +1))
+
+(use-package orderless
+  :init
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package consult
+  :after evil
+  :bind (("C-x C-b" . consult-buffer)
+         (:map evil-normal-state-map
+               ("/" . consult-line))))
+
+(use-package embark)
+
+;;;;;;;;;;;
+;; MaGit ;;
+;;;;;;;;;;;
+
 (use-package magit
   :bind ("C-x g" . magit-status)
   :config
   (add-hook 'with-editor-mode-hook #'evil-insert-state))
+
+(use-package forge
+  :init
+  ;; https://magnus.therning.org/2021-12-08-magit_forge-and-self-hosted-gitlab.html
+  (setq
+   forge-alist '(("gitlab.deondigital.com" "gitlab.deondigital.com/api/v4"
+                  "gitlab.deondigital.com" forge-gitlab-repository)
+                 ("github.com" "api.github.com"
+                  "github.com" forge-github-repository)
+                 ("gitlab.com" "gitlab.com/api/v4"
+                  "gitlab.com" forge-gitlab-repository)))
+  :after magit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Window management ;;
@@ -188,43 +262,43 @@
   :config
   (evil-collection-init))
 
-;;;;;;;;;
-;; Ido ;;
-;;;;;;;;;
+;;;;;;;;;;
+;; Lisp ;;
+;;;;;;;;;;
+;; (defvar lisp-modes '(clojure-mode emacs-lisp-mode))
 
-(use-package ido
+(use-package avy)
+
+(use-package vilpy
+  :straight (vilpy :type git
+                   :host github
+                   :repo "Andre0991/vilpy")
+  :after avy
+  :bind (("C-f" . vilpy-special)
+         (:map evil-normal-state-map
+               ("C-f" . vilpy-special))
+         (:map vilpy-mode-map
+               ("C-M-." . vilpy-parens)
+               ("C-M->" . vilpy-brackets)
+               ("C-M-," . vilpy-braces))
+         (:map vilpy-mode-map-special
+               ("C-f" . vilpy-other))
+         (:map vilpy-mode-map-vilpy
+               ("C-j" . nil)))
   :init
-  (setq ido-everywhere t
-        ido-enable-flex-matching t
-        ido-enable-prefix nil
-        ido-enable-flex-matching t
-        ido-case-fold nil
-        ido-auto-merge-work-directories-length -1
-        ido-create-new-buffer 'always
-        ido-use-filename-at-point nil
-        ido-max-prospects 10
-        ido-use-faces nil)
-  :bind ("C-x C-b" . ido-switch-buffer)
-  :config (ido-mode +1))
-
-(use-package ido-vertical-mode
-  :config (ido-vertical-mode +1))
-
-(use-package ido-completing-read+
-  :config (ido-ubiquitous-mode +1))
-
-(use-package flx-ido
-  :config (flx-ido-mode +1))
-
-;; Smex
-(use-package amx
+  ;; Autoload / :hook does apparently not work
+  (add-hook 'emacs-lisp-mode-hook #'vilpy-mode)
+  (add-hook 'clojure-mode-hook #'vilpy-mode)
   :config
-  (amx-mode +1))
+  (vilpy-define-key vilpy-mode-map "TAB" 'vilpy-other)
+  (vilpy-define-key vilpy-mode-map "i" 'vilpy-mark-list)
+  (vilpy-mode +1))
 
-(use-package magit
-  :bind ("C-x g" . magit-status)
-  :config
-  (add-hook 'with-editor-mode-hook #'evil-insert-state))
+(use-package aggressive-indent
+  :init
+  ;; Autoload / :hook does apparently not work
+  (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
 
 ;;;;;;;;;;;;;
 ;; Clojure ;;
@@ -238,9 +312,6 @@
   :defer t
   :commands (flycheck-clojure-setup)
   :config
-  ;;(eval-after-load 'flycheck
-  ;;  '(setq flycheck-display-errors-function
-  ;;         #'flycheck-pos-tip-error-messages))
   (add-hook 'after-init-hook #'global-flycheck-mode))
 
 (use-package flycheck-clj-kondo)
@@ -268,24 +339,6 @@
   (setq-default flycheck-disabled-checkers
                 '(clojure-cider-eastwood clojure-cider-typed))
   :after clojure-mode)
-
-(use-package avy)
-
-(use-package vilpy
-  :straight (el-patch :type git
-            :host github
-            :repo "Andre0991/vilpy")
-  :after avy
-  :bind ((:map vilpy-mode-map
-               ("C-f"   . vilpy-special)
-               ("C-M-." . vilpy-parens)
-               ("C-M->" . vilpy-brackets)
-               ("C-M-," . vilpy-braces))
-         (:map vilpy-mode-map-vilpy
-               ("C-j" . nil)))
-  :hook clojure-mode
-  :config
-  (vilpy-mode +1))
 
 ;;;;;;;;;;;;
 ;; Python ;;
@@ -428,12 +481,15 @@
   :commands lsp-treemacs-errors-list)
 
 (use-package lsp-ui
+  :straight (lsp-ui :type git
+                    :host github
+                    :repo "emacs-lsp/lsp-ui")
   :commands lsp-ui-mode
   :init
   (setq lsp-ui-doc-show-with-cursor t
         lsp-ui-doc-delay 0
         lsp-ui-doc-include-signature nil
-        lsp-ui-doc-max-width 50
+        lsp-ui-doc-max-width 30
         lsp-ui-doc-max-height 6
         lsp-ui-doc-header t
         lsp-ui-doc-text-scale-level -4
@@ -443,14 +499,12 @@
         lsp-ui-sideline-show-hover nil
         lsp-ui-sideline-show-code-actions nil))
 
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(straight uniquify yaml-mode which-key use-package-chords tide super-save solarized-theme rainbow-delimiters powerline polymode ob-ipython magit lsp-ui lispyville keytar jupyter ivy-hydra inf-clojure ido-vertical-mode ido-completing-read+ highlight-numbers highlight-escape-sequences helm-lsp flycheck-pos-tip flycheck-grammarly flycheck-clojure flycheck-clj-kondo flx-ido fira-code-mode expand-region evil-surround evil-mc evil-commentary evil-collection evil-cleverparens eval-sexp-fu elpy editorconfig diminish deferred counsel code-cells clojure-snippets anaphora amx aggressive-indent)))
+ '(safe-local-variable-values '((cider-default-cljs-repl . shadow))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
