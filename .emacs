@@ -176,10 +176,10 @@
   (global-evil-mc-mode 1)
   (setq evil-mc-undo-cursors-on-keyboard-quit 1))
 
-;;(use-package evil-cleverparens
-;;  :ensure t
-;;  :after evil
-;;  :hook evil-mode)
+(use-package evil-collection
+  :after evil
+  :config
+  (evil-collection-init))
 
 ;;;;;;;;;
 ;; Ido ;;
