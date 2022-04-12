@@ -38,13 +38,16 @@
   (setq inhibit-startup-screen t)
   (add-hook 'before-save-hook 'delete-trailing-whitespace))
 
+;;;;;;;;;;
+;; Misc ;;
+;;;;;;;;;;
 (use-package diminish)
 
-;;(use-package files
-;;  :config
-;;  (setq confirm-kill-processes t
-;;        create-lockfiles nil
-;;        make-backup-files nil))
+(use-package files
+  :config
+  (setq confirm-kill-processes t
+        create-lockfiles nil
+        make-backup-files nil))
 
 (use-package autorevert
   :config
@@ -97,7 +100,6 @@
   :init
   (setq flycheck-display-errors-function
       #'flycheck-display-error-messages)
-
   :config
   (global-flycheck-mode))
 
@@ -107,6 +109,11 @@
 (use-package expand-region
   :bind (("C-j" . er/expand-region)
          ("C-S-j" . er/contract-region)))
+
+(use-package magit
+  :bind ("C-x g" . magit-status)
+  :config
+  (add-hook 'with-editor-mode-hook #'evil-insert-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Window management ;;
