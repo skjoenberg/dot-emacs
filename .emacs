@@ -92,28 +92,39 @@
   :config
   (yas-global-mode 1))
 
-(use-package company
-  :init
-  (setq company-idle-delay 0.1
-        company-minimum-prefix-length 3
-        company-selection-wrap-around t
-        company-tooltip-align-annotations t
-        company-dabbrev-ignore-case t
-        company-dabbrev-downcase t
-        company-tooltip-limit 5
-        company-tooltip-minimum 4
-        company-tooltip-flip-when-above t
-        company-frontends '(company-pseudo-tooltip-frontend
-                            company-echo-metadata-frontend) )
+(use-package corfu
+  :straight (:files ("corfu.el"
+                     "extensions/corfu-history.el"))
+  :hook ((prog-mode . corfu-mode))
+  :bind ((:map corfu-map
+               ("C-s" . corfu-next)
+               ("C-r" . corfu-previous)
+               ("M-SPC" . corfu-insert-separator)))
   :config
-  (global-company-mode)
-  (define-key company-active-map (kbd "C-s") 'company-select-next)
-  (define-key company-active-map (kbd "C-r") 'company-select-previous))
+  (setq corfu-cycle t
+        corfu-auto t
+        corfu-on-exact-match nil
+        corfu-preview-current t
+        corfu-max-width 30
+        corfu-count 4
+        corfu-auto-delay 1.0)
+
+  ;; Recommended: Enable Corfu globally.
+  :init
+  (global-corfu-mode))
+
+(use-package kind-icon
+  :after corfu
+  :custom
+  (kind-icon-default-face 'corfu-default)
+  (kind-icon-default-style '(:padding 0 :stroke 0 :margin -1.1 :radius 0 :height 0.5 :scale 1))
+  :config
+  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
 
 (use-package flycheck
   :init
   (setq flycheck-display-errors-function
-      #'flycheck-display-error-messages)
+        #'flycheck-display-error-messages)
   :config
   (global-flycheck-mode))
 
@@ -123,9 +134,6 @@
 (use-package expand-region
   :bind (("C-j" . er/expand-region)
          ("C-S-j" . er/contract-region)))
-
-
-
 
 (use-package marginalia
   :bind (("M-A" . marginalia-cycle)
@@ -165,8 +173,6 @@
   :bind (("C-x C-b" . consult-buffer)
          (:map evil-normal-state-map
                ("/" . consult-line))))
-
-(use-package embark)
 
 ;;;;;;;;;;;
 ;; MaGit ;;
@@ -221,12 +227,20 @@
 ;;;;;;;;;;
 ;; Evil ;;
 ;;;;;;;;;;
+(use-package undo-fu)
+
+(use-package undo-fu-session
+  :config
+  (setq undo-fu-session-incompatible-files
+        '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'"))
+  :config
+  (global-undo-fu-session-mode +1))
 
 (use-package evil
-  :diminish undo-tree-mode
   :init
   (setq evil-want-integration t
-        evil-want-keybinding nil)
+        evil-want-keybinding nil
+        evil-undo-system 'undo-fu)
   :bind ((:map evil-motion-state-map
                ("j" . evil-next-visual-line)
                ("k" . evil-previous-visual-line)
@@ -235,7 +249,9 @@
                ("j" . evil-next-visual-line)
                ("k" . evil-previous-visual-line))
          (:map evil-normal-state-map
-               ("M-." . nil)))
+               ("M-." . nil))
+		 (:map evil-insert-state-map
+               ("C-r" . nil)))
   :chords ("jk" . evil-normal-state)
   :hook (after-init . evil-mode))
 
@@ -259,13 +275,22 @@
 
 (use-package evil-collection
   :after evil
+  :init
+  (setq forge-add-default-bindings nil)
   :config
   (evil-collection-init))
 
 ;;;;;;;;;;
 ;; Lisp ;;
 ;;;;;;;;;;
-;; (defvar lisp-modes '(clojure-mode emacs-lisp-mode))
+(use-package smartparens
+  :init
+  (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'smartparens-strict-mode))
+
+(use-package evil-cleverparens
+  :hook (clojure-mode emacs-lisp-mode)
+  :config (evil-cleverparens-mode +1))
 
 (use-package avy)
 
@@ -273,29 +298,59 @@
   :straight (vilpy :type git
                    :host github
                    :repo "Andre0991/vilpy")
-  :after avy
-  :bind (("C-f" . vilpy-special)
-         (:map evil-normal-state-map
-               ("C-f" . vilpy-special))
-         (:map vilpy-mode-map
-               ("C-M-." . vilpy-parens)
-               ("C-M->" . vilpy-brackets)
-               ("C-M-," . vilpy-braces))
-         (:map vilpy-mode-map-special
-               ("C-f" . vilpy-other))
-         (:map vilpy-mode-map-vilpy
-               ("C-j" . nil)))
+  :after (avy smartparens)
   :init
   ;; Autoload / :hook does apparently not work
   (add-hook 'emacs-lisp-mode-hook #'vilpy-mode)
   (add-hook 'clojure-mode-hook #'vilpy-mode)
+  (defun current-line-empty-p ()
+    (save-excursion
+      (beginning-of-line)
+      (looking-at-p "[[:blank:]]*$")))
+  (defun vilpy-delete-special ()
+    (interactive)
+    (call-interactively 'vilpy-delete)
+    (when (current-line-empty-p)
+      (call-interactively 'evil-delete-whole-line))
+    (vilpy-special))
+  (defun wrap-parens ()
+    (interactive)
+    (call-interactively 'sp-wrap-round)
+    (call-interactively 'vilpy-backward)
+    (call-interactively 'evil-insert))
+  (defun wrap-brackets ()
+    (interactive)
+    (call-interactively 'sp-wrap-square)
+    (call-interactively 'vilpy-backward)
+    (call-interactively 'evil-insert))
+  (defun wrap-braces ()
+    (interactive)
+    (call-interactively 'sp-wrap-curly)
+    (call-interactively 'evil-insert))
+  :bind (("C-f" . vilpy-special)
+         ("S-l" . vilpy-slurp)
+         ("S-h" . vilpy-barf)
+         (:map evil-normal-state-map
+               ("C-f" . vilpy-special))
+         (:map vilpy-mode-map
+               ("C-M-." . wrap-parens)
+               ("C-M->" . wrap-brackets)
+               ("C-M-," . wrap-braces))
+         (:map vilpy-mode-map-vilpy
+               ("C-j" . nil)))
   :config
-  (vilpy-define-key vilpy-mode-map "TAB" 'vilpy-other)
   (vilpy-define-key vilpy-mode-map "i" 'vilpy-mark-list)
+  (vilpy-define-key vilpy-mode-map "d" 'vilpy-delete-special)
+  (vilpy-define-key vilpy-mode-map "D" 'vilpy-delete)
+  (vilpy-define-key vilpy-mode-map "." 'wrap-parens)
+  (vilpy-define-key vilpy-mode-map ">" 'wrap-brackets)
+  (vilpy-define-key vilpy-mode-map "," 'wrap-braces)
   (vilpy-mode +1))
 
 (use-package aggressive-indent
   :init
+  (setq aggressive-indent-protected-commands
+        '(undo undo-tree-undo undo-tree-redo whitespace-cleanup recenter))
   ;; Autoload / :hook does apparently not work
   (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
@@ -393,7 +448,7 @@
 ;; UI ;;
 ;;;;;;;;
 
-(setq show-paren-delay 0)
+(setq show-paren-delay 0.1)
 (show-paren-mode +1)
 
 (use-package fira-code-mode
@@ -457,7 +512,8 @@
 
 (use-package lsp-mode
   :init
-  (setq lsp-keymap-prefix "C-l"
+  (setq lsp-completion-provider :none
+        lsp-keymap-prefix "C-l"
         gc-cons-threshold (* 100 1024 1024)
         read-process-output-max (* 1024 1024)
         lsp-headerline-breadcrumb-enable nil
@@ -468,13 +524,15 @@
         ;; clojure-lsp runs cljfmt on indent which is too aggresive
         lsp-enable-indentation nil
         treemacs-space-between-root-nodes nil
-        company-minimum-prefix-length 2
         lsp-signature-auto-activate nil)
-
+  (defun my/lsp-mode-setup-completion ()
+    (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
+          '(flex)))
   :hook ((clojure-mode . lsp)
          (clojurec-mode . lsp)
          (clojurescript-mode . lsp)
-         (lsp-mode . lsp-enable-which-key-integration))
+         (lsp-mode . lsp-enable-which-key-integration)
+         (lsp-completion-mode . my/lsp-mode-setup-completion))
   :commands lsp)
 
 (use-package lsp-treemacs
@@ -486,8 +544,9 @@
                     :repo "emacs-lsp/lsp-ui")
   :commands lsp-ui-mode
   :init
-  (setq lsp-ui-doc-show-with-cursor t
-        lsp-ui-doc-delay 0
+  (setq lsp-ui-doc-enable t
+        lsp-ui-doc-show-with-cursor t
+        lsp-ui-doc-delay 1.0
         lsp-ui-doc-include-signature nil
         lsp-ui-doc-max-width 30
         lsp-ui-doc-max-height 6
