@@ -32,19 +32,32 @@
   (tool-bar-mode -1)
   (menu-bar-mode -1)
   (scroll-bar-mode -1)
-  (setq scroll-margin 0
-        scroll-conservatively 101
-        scroll-preserve-screen-position t
-        auto-window-vscroll nil
-        visible-bell       nil
-        ring-bell-function #'ignore
-        enable-recursive-minibuffers t)
-  (setq-default indent-tabs-mode nil)
-  (setq-default require-final-newline t)
-  (setq inhibit-startup-screen t)
-  (setq confirm-kill-processes t
-        create-lockfiles nil
-        make-backup-files nil))
+  (setq
+   ;; gc-cons-threshold (* 1000 1024 1024)
+   read-process-output-max (* 1024 1024)
+   redisplay-dont-pause t
+   maximum-scroll-margin 0.5
+   scroll-margin 99999
+   scroll-step 1
+   scroll-preserve-screen-position t
+   ;; fast-but-imprecise-scrolling nil
+   ;; jit-lock-defer-time 0
+   auto-window-vscroll nil
+   visible-bell       nil
+   ring-bell-function #'ignore
+   enable-recursive-minibuffers t
+   inhibit-startup-screen t
+   confirm-kill-processes t
+   create-lockfiles nil
+   make-backup-files nil)
+  (setq-default indent-tabs-mode nil
+                bidi-paragraph-direction nil
+                require-final-newline t)
+
+  (global-display-fill-column-indicator-mode +1)
+  (global-visual-line-mode +1))
+
+;; (use-package scroll-margs)
 
 ;;;;;;;;;;
 ;; Misc ;;
@@ -174,6 +187,20 @@
          (:map evil-normal-state-map
                ("/" . consult-line))))
 
+(use-package tree-sitter
+  :hook ((python-mode typescript-mode go-mode sh-mode clojure-mode) . tree-sitter-mode)
+  :config
+  (add-to-list
+   'tree-sitter-major-mode-language-alist
+   '(clojure-mode . clojure))
+  (require 'tree-sitter-langs)
+  (push '(typescript-tsx-mode . typescript) tree-sitter-major-mode-language-alist)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+
+(use-package tree-sitter-langs)
+
+(use-package dockerfile-mode)
+
 ;;;;;;;;;;;
 ;; MaGit ;;
 ;;;;;;;;;;;
@@ -240,10 +267,10 @@
   :init
   (setq evil-want-integration t
         evil-want-keybinding nil
-        evil-undo-system 'undo-fu)
+        evil-undo-system 'undo-fu
+        evil-respect-visual-line-mode t)
+
   :bind ((:map evil-motion-state-map
-               ("j" . evil-next-visual-line)
-               ("k" . evil-previous-visual-line)
                ("C-i" . nil))
          (:map evil-visual-state-map
                ("j" . evil-next-visual-line)
@@ -289,8 +316,9 @@
   (add-hook 'clojure-mode-hook #'smartparens-strict-mode))
 
 (use-package evil-cleverparens
-  :hook (clojure-mode emacs-lisp-mode)
-  :config (evil-cleverparens-mode +1))
+  :init
+  (add-hook 'emacs-lisp-mode-hook #'evil-cleverparens-mode)
+  (add-hook 'clojure-mode-hook #'evil-cleverparens-mode))
 
 (use-package avy)
 
@@ -307,6 +335,10 @@
     (save-excursion
       (beginning-of-line)
       (looking-at-p "[[:blank:]]*$")))
+  (defun vilpy-special-ins ()
+    (interactive)
+    (call-interactively 'vilpy-special)
+    (call-interactively 'evil-insert))
   (defun vilpy-delete-special ()
     (interactive)
     (call-interactively 'vilpy-delete)
@@ -327,11 +359,16 @@
     (interactive)
     (call-interactively 'sp-wrap-curly)
     (call-interactively 'evil-insert))
-  :bind (("C-f" . vilpy-special)
-         ("S-l" . vilpy-slurp)
-         ("S-h" . vilpy-barf)
+  (defun comment ()
+    (interactive)
+    (if (memq major-mode vilpy-clojure-modes)
+        (call-interactively 'vilpy-underscore)
+      (call-interactively 'vilpy-comment)))
+  :bind (("C-f" . vilpy-special-ins)
+         ("s-l" . vilpy-slurp)
+         ("s-h" . vilpy-barf)
          (:map evil-normal-state-map
-               ("C-f" . vilpy-special))
+               ("C-f" . vilpy-special-ins))
          (:map vilpy-mode-map
                ("C-M-." . wrap-parens)
                ("C-M->" . wrap-brackets)
@@ -345,6 +382,9 @@
   (vilpy-define-key vilpy-mode-map "." 'wrap-parens)
   (vilpy-define-key vilpy-mode-map ">" 'wrap-brackets)
   (vilpy-define-key vilpy-mode-map "," 'wrap-braces)
+  (vilpy-define-key vilpy-mode-map "c" 'comment)
+  (vilpy-define-key vilpy-mode-map "y" 'vilpy-copy)
+
   (vilpy-mode +1))
 
 (use-package aggressive-indent
@@ -457,7 +497,7 @@
   (fira-code-mode-disabled-ligatures '("[]" "#{" "#(" "#_" "#_(" "x"))
   :hook prog-mode
   :config
-  (set-face-attribute 'default nil :family "Fira Code" :height 180))
+  (set-face-attribute 'default nil :family "Fira Code" :height 170))
 
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -471,6 +511,7 @@
 
 (global-hl-line-mode)
 
+(setq display-line-numbers-width-start 3)
 (global-display-line-numbers-mode)
 
 (use-package powerline
@@ -502,22 +543,23 @@
   "Alaways center the cursor in the middle of the screen."
   :lighter "..."
   (cond (centered-point-mode (add-hook 'post-command-hook 'line-change))
-	(t (remove-hook 'post-command-hook 'line-change))))
+	    (t (remove-hook 'post-command-hook 'line-change))))
 
-(centered-point-mode)
+;; (centered-point-mode)
 
 ;;;;;;;;;
 ;; LSP ;;
 ;;;;;;;;;
 
+(setq lsp-use-plists t)
 (use-package lsp-mode
   :init
   (setq lsp-completion-provider :none
         lsp-keymap-prefix "C-l"
-        gc-cons-threshold (* 100 1024 1024)
-        read-process-output-max (* 1024 1024)
         lsp-headerline-breadcrumb-enable nil
+        lsp-idle-delay 0.500
         lsp-auto-configure t
+        lsp-log-io nil
         ;; to avoid conflicting with CIDER eldoc
         lsp-eldoc-enable-hover nil
         lsp-lens-enable t
@@ -563,7 +605,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(safe-local-variable-values '((cider-default-cljs-repl . shadow))))
+ '(safe-local-variable-values '((cider-default-cljs-repl . shadow)))
+ '(warning-suppress-log-types '((comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
