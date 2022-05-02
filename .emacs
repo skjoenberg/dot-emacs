@@ -28,36 +28,33 @@
   :config
   (setq ring-bell-function 'ignore
         frame-resize-pixelwise t
+        treemacs-space-between-root-nodes nil
         default-directory "~/")
-  (tool-bar-mode -1)
-  (menu-bar-mode -1)
-  (scroll-bar-mode -1)
-  (setq
-   ;; gc-cons-threshold (* 1000 1024 1024)
-   read-process-output-max (* 1024 1024)
-   redisplay-dont-pause t
-   maximum-scroll-margin 0.5
-   scroll-margin 99999
-   scroll-step 1
-   scroll-preserve-screen-position t
-   ;; fast-but-imprecise-scrolling nil
-   ;; jit-lock-defer-time 0
-   auto-window-vscroll nil
-   visible-bell       nil
-   ring-bell-function #'ignore
-   enable-recursive-minibuffers t
-   inhibit-startup-screen t
-   confirm-kill-processes t
-   create-lockfiles nil
-   make-backup-files nil)
+  (setq gc-cons-threshold (* 100 1024 1024)
+        read-process-output-max (* 1024 1024)
+        redisplay-dont-pause t
+        maximum-scroll-margin 0.5
+        scroll-margin 99999
+        scroll-step 1
+        scroll-preserve-screen-position t
+        auto-window-vscroll nil
+        visible-bell       nil
+        ring-bell-function #'ignore
+        enable-recursive-minibuffers t
+        inhibit-startup-screen t
+        confirm-kill-processes t
+        create-lockfiles nil
+        make-backup-files nil)
   (setq-default indent-tabs-mode nil
                 bidi-paragraph-direction nil
                 require-final-newline t)
 
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
   (global-display-fill-column-indicator-mode +1)
-  (global-visual-line-mode +1))
-
-;; (use-package scroll-margs)
+  (global-visual-line-mode +1)
+  (diminish 'visual-line-mode))
 
 ;;;;;;;;;;
 ;; Misc ;;
@@ -67,6 +64,7 @@
 (use-package diminish)
 
 (use-package ws-butler
+  :diminish ws-butler-mode
   :init
   (ws-butler-global-mode +1))
 
@@ -93,11 +91,13 @@
   :config (key-chord-mode +1))
 
 (use-package super-save
+  :diminish super-save-mode
   :config
   (super-save-mode +1)
   (setq super-save-auto-save-when-idle t))
 
 (use-package which-key
+  :diminish which-key-mode
   :config
   (which-key-mode +1))
 
@@ -120,7 +120,7 @@
         corfu-preview-current t
         corfu-max-width 30
         corfu-count 4
-        corfu-auto-delay 1.0)
+        corfu-auto-delay 0.3)
 
   ;; Recommended: Enable Corfu globally.
   :init
@@ -184,30 +184,31 @@
 (use-package consult
   :after evil
   :bind (("C-x C-b" . consult-buffer)
-         (:map evil-normal-state-map
-               ("/" . consult-line))))
-
-(use-package tree-sitter
-  :hook ((python-mode typescript-mode go-mode sh-mode clojure-mode) . tree-sitter-mode)
-  :config
-  (add-to-list
-   'tree-sitter-major-mode-language-alist
-   '(clojure-mode . clojure))
-  (require 'tree-sitter-langs)
-  (push '(typescript-tsx-mode . typescript) tree-sitter-major-mode-language-alist)
-  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
-
-(use-package tree-sitter-langs)
+         ;; (:map evil-normal-state-map
+         ;;       ("/" . consult-line))
+         ))
 
 (use-package dockerfile-mode)
+
+;; (use-package tree-sitter
+;;   :hook ((python-mode typescript-mode go-mode sh-mode clojure-mode) . tree-sitter-mode)
+;;   :config
+;;   (add-to-list
+;;    'tree-sitter-major-mode-language-alist
+;;    '(clojure-mode . clojure))
+;;   (require 'tree-sitter-langs)
+;;   (push '(typescript-tsx-mode . typescript) tree-sitter-major-mode-language-alist)
+;;   (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+;; (use-package tree-sitter-langs)
 
 ;;;;;;;;;;;
 ;; MaGit ;;
 ;;;;;;;;;;;
-
 (use-package magit
+  :diminish magit
   :bind ("C-x g" . magit-status)
   :config
+  (delete 'Git vc-handled-backends)
   (add-hook 'with-editor-mode-hook #'evil-insert-state))
 
 (use-package forge
@@ -301,6 +302,7 @@
   (setq evil-mc-undo-cursors-on-keyboard-quit 1))
 
 (use-package evil-collection
+  :diminish evil-collection-unimpaired-mode
   :after evil
   :init
   (setq forge-add-default-bindings nil)
@@ -311,11 +313,13 @@
 ;; Lisp ;;
 ;;;;;;;;;;
 (use-package smartparens
+  :diminish (smartparens-strict-mode smartparens-mode)
   :init
   (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
   (add-hook 'clojure-mode-hook #'smartparens-strict-mode))
 
 (use-package evil-cleverparens
+  :diminish evil-cleverparens-mode
   :init
   (add-hook 'emacs-lisp-mode-hook #'evil-cleverparens-mode)
   (add-hook 'clojure-mode-hook #'evil-cleverparens-mode))
@@ -323,6 +327,7 @@
 (use-package avy)
 
 (use-package vilpy
+  :diminish vilpy-mode
   :straight (vilpy :type git
                    :host github
                    :repo "Andre0991/vilpy")
@@ -384,10 +389,13 @@
   (vilpy-define-key vilpy-mode-map "," 'wrap-braces)
   (vilpy-define-key vilpy-mode-map "c" 'comment)
   (vilpy-define-key vilpy-mode-map "y" 'vilpy-copy)
+  (vilpy-define-key vilpy-mode-map "N" 'vilpy-narrow)
+  (vilpy-define-key vilpy-mode-map "W" 'vilpy-widen)
 
   (vilpy-mode +1))
 
 (use-package aggressive-indent
+  :diminish aggressive-indent-mode
   :init
   (setq aggressive-indent-protected-commands
         '(undo undo-tree-undo undo-tree-redo whitespace-cleanup recenter))
@@ -401,13 +409,16 @@
 
 (use-package clojure-mode
   :config
-  (add-hook 'before-save-hook 'clojure-sort-ns t t))
+  (add-hook 'clojure-mode-hook
+            (lambda () (add-hook 'before-save-hook 'clojure-sort-ns nil t)))
+  (add-hook 'clojurescript-mode-hook
+            (lambda () (add-hook 'before-save-hook 'clojure-sort-ns nil t))))
 
-(use-package flycheck-clojure
-  :defer t
-  :commands (flycheck-clojure-setup)
-  :config
-  (add-hook 'after-init-hook #'global-flycheck-mode))
+;; (use-package flycheck-clojure
+;;   :defer t
+;;   :commands (flycheck-clojure-setup)
+;;   :config
+;;   (add-hook 'after-init-hook #'global-flycheck-mode))
 
 (use-package flycheck-clj-kondo)
 
@@ -428,9 +439,9 @@
         nrepl-popup-stacktraces nil
         cider-repl-require-ns-on-set t)
   :bind (:map cider-mode-map
-         ("C-c C-p" . cider-eval-print-last-sexp))
+              ("C-c C-p" . cider-eval-print-last-sexp))
   :config
-  (flycheck-clojure-setup)
+  ;; (flycheck-clojure-setup)
   (setq-default flycheck-disabled-checkers
                 '(clojure-cider-eastwood clojure-cider-typed))
   :after clojure-mode)
@@ -551,21 +562,21 @@
 ;; LSP ;;
 ;;;;;;;;;
 
-(setq lsp-use-plists t)
+;; Remember to set `export LSP_USE_PLISTS=true`
+;; See https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization
+;; (setq lsp-use-plists t)
 (use-package lsp-mode
   :init
   (setq lsp-completion-provider :none
         lsp-keymap-prefix "C-l"
         lsp-headerline-breadcrumb-enable nil
-        lsp-idle-delay 0.500
         lsp-auto-configure t
-        lsp-log-io nil
         ;; to avoid conflicting with CIDER eldoc
         lsp-eldoc-enable-hover nil
         lsp-lens-enable t
+        lsp-log-io nil
         ;; clojure-lsp runs cljfmt on indent which is too aggresive
         lsp-enable-indentation nil
-        treemacs-space-between-root-nodes nil
         lsp-signature-auto-activate nil)
   (defun my/lsp-mode-setup-completion ()
     (setf (alist-get 'styles (alist-get 'lsp-capf completion-category-defaults))
@@ -577,23 +588,24 @@
          (lsp-completion-mode . my/lsp-mode-setup-completion))
   :commands lsp)
 
-(use-package lsp-treemacs
-  :commands lsp-treemacs-errors-list)
+;; (use-package lsp-treemacs
+;;   :commands lsp-treemacs-errors-list)
 
 (use-package lsp-ui
   :straight (lsp-ui :type git
                     :host github
-                    :repo "emacs-lsp/lsp-ui")
+                    :repo "emacs-lsp/lsp-ui"
+                    :branch "master")
   :commands lsp-ui-mode
   :init
   (setq lsp-ui-doc-enable t
         lsp-ui-doc-show-with-cursor t
-        lsp-ui-doc-delay 1.0
+        lsp-ui-doc-delay 0.5
         lsp-ui-doc-include-signature nil
-        lsp-ui-doc-max-width 30
-        lsp-ui-doc-max-height 6
+        lsp-ui-doc-max-width 50
+        lsp-ui-doc-max-height 8
         lsp-ui-doc-header t
-        lsp-ui-doc-text-scale-level -4
+        lsp-ui-doc-text-scale-level -3
         lsp-ui-doc-enhanced-markdown t
         lsp-ui-doc-show-with-mouse nil
         lsp-ui-sideline-show-diagnostics nil
@@ -605,8 +617,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(safe-local-variable-values '((cider-default-cljs-repl . shadow)))
- '(warning-suppress-log-types '((comp))))
+ '(safe-local-variable-values '((cider-default-cljs-repl . shadow))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
